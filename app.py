@@ -384,6 +384,9 @@ def decode_predictions(preds):
     return CLASS_NAMES[np.argmax(preds)]
 
 # Function to generate a PDF report
+def wrap_text(text, max_length=80):
+    return "\n".join([text[i:i+max_length] for i in range(0, len(text), max_length)])
+
 def generate_pdf_report(selected_items, patient_info, prediction, prediction_probabilities, tumor_dimensions, anatomical_localization, referral_suggestions, evidence_references, clinical_validation):
     pdf = FPDF()
     pdf.add_page()
@@ -391,10 +394,10 @@ def generate_pdf_report(selected_items, patient_info, prediction, prediction_pro
 
     # Add patient information
     pdf.cell(200, 10, txt="Patient Information", ln=True, align="C")
-    pdf.cell(200, 10, txt=f"Age: {patient_info['age']}", ln=True)
-    pdf.cell(200, 10, txt=f"Gender: {patient_info['gender']}", ln=True)
-    pdf.cell(200, 10, txt=f"Symptoms: {patient_info['symptoms']}", ln=True)
-    pdf.cell(200, 10, txt=f"Medical History: {patient_info['history']}", ln=True)
+    pdf.cell(200, 10, txt=f"Age: {patient_info.get('age', 'N/A')}", ln=True)
+    pdf.cell(200, 10, txt=f"Gender: {patient_info.get('gender', 'N/A')}", ln=True)
+    pdf.cell(200, 10, txt=f"Symptoms: {patient_info.get('symptoms', 'N/A')}", ln=True)
+    pdf.cell(200, 10, txt=f"Medical History: {patient_info.get('history', 'N/A')}", ln=True)
     pdf.ln(10)
 
     # Add prediction results
@@ -407,36 +410,38 @@ def generate_pdf_report(selected_items, patient_info, prediction, prediction_pro
     # Add tumor dimensions
     if "Tumor Dimensions" in selected_items:
         pdf.cell(200, 10, txt="Tumor Dimensions", ln=True, align="C")
-        pdf.cell(200, 10, txt=f"Length: {tumor_dimensions['length']} mm", ln=True)
-        pdf.cell(200, 10, txt=f"Width: {tumor_dimensions['width']} mm", ln=True)
-        pdf.cell(200, 10, txt=f"Depth: {tumor_dimensions['depth']} mm", ln=True)
-        pdf.cell(200, 10, txt=f"Approximate Volume: {tumor_dimensions['volume']:.2f} mm³", ln=True)
+        pdf.cell(200, 10, txt=f"Length: {tumor_dimensions.get('length', 'N/A')} mm", ln=True)
+        pdf.cell(200, 10, txt=f"Width: {tumor_dimensions.get('width', 'N/A')} mm", ln=True)
+        pdf.cell(200, 10, txt=f"Depth: {tumor_dimensions.get('depth', 'N/A')} mm", ln=True)
+        pdf.cell(200, 10, txt=f"Approximate Volume: {tumor_dimensions.get('volume', 0):.2f} mm³", ln=True)
         pdf.ln(10)
 
     # Add anatomical localization
     if "Anatomical Localization" in selected_items:
         pdf.cell(200, 10, txt="Anatomical Localization", ln=True, align="C")
-        pdf.multi_cell(0, 10, txt=anatomical_localization)
+        pdf.multi_cell(0, 10, txt=wrap_text(anatomical_localization))
         pdf.ln(10)
 
     # Add referral suggestions
     if "Referral Suggestions" in selected_items:
         pdf.cell(200, 10, txt="Referral Suggestions", ln=True, align="C")
-        pdf.multi_cell(0, 10, txt=referral_suggestions)
+        pdf.multi_cell(0, 10, txt=wrap_text(referral_suggestions))
         pdf.ln(10)
 
     # Add evidence references
     if "Evidence References" in selected_items:
         pdf.cell(200, 10, txt="Evidence References", ln=True, align="C")
         for ref in evidence_references:
-            pdf.multi_cell(0, 10, txt=f"- {ref}")
+            safe_ref = wrap_text(str(ref).encode("ascii", errors="ignore").decode() if ref else "N/A")
+            pdf.multi_cell(0, 10, txt=f"- {safe_ref}")
         pdf.ln(10)
 
     # Add clinical validation
     if "Clinical Validation" in selected_items:
         pdf.cell(200, 10, txt="Clinical Validation", ln=True, align="C")
         for val in clinical_validation:
-            pdf.multi_cell(0, 10, txt=f"- {val}")
+            safe_val = wrap_text(str(val).encode("ascii", errors="ignore").decode() if val else "N/A")
+            pdf.multi_cell(0, 10, txt=f"- {safe_val}")
         pdf.ln(10)
 
     # Save the PDF to a temporary file
