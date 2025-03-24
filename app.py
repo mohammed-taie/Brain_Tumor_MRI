@@ -387,52 +387,58 @@ def decode_predictions(preds):
 def wrap_text(text, max_length=80):
     return "\n".join([text[i:i+max_length] for i in range(0, len(text), max_length)])
 
+# Function to generate a PDF report with improved encoding and text handling
 def generate_pdf_report(selected_items, patient_info, prediction, prediction_probabilities, tumor_dimensions, anatomical_localization, referral_suggestions, evidence_references, clinical_validation):
     pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
     pdf.set_font("Arial", size=12)
 
+    def safe_text(text):
+        """Ensure text is safe for FPDF by encoding and replacing unsupported characters."""
+        return text.encode("latin-1", "replace").decode("latin-1")
+
     # Add patient information
     pdf.cell(200, 10, txt="Patient Information", ln=True, align="C")
-    pdf.cell(200, 10, txt=f"Age: {patient_info.get('age', 'N/A')}", ln=True)
-    pdf.cell(200, 10, txt=f"Gender: {patient_info.get('gender', 'N/A')}", ln=True)
-    pdf.cell(200, 10, txt=f"Symptoms: {patient_info.get('symptoms', 'N/A')}", ln=True)
-    pdf.cell(200, 10, txt=f"Medical History: {patient_info.get('history', 'N/A')}", ln=True)
+    pdf.cell(200, 10, txt=f"Age: {safe_text(str(patient_info['age']))}", ln=True)
+    pdf.cell(200, 10, txt=f"Gender: {safe_text(patient_info['gender'])}", ln=True)
+    pdf.multi_cell(0, 10, txt=f"Symptoms: {safe_text(patient_info['symptoms'])}")
+    pdf.multi_cell(0, 10, txt=f"Medical History: {safe_text(patient_info['history'])}")
     pdf.ln(10)
 
     # Add prediction results
     if "Prediction Results" in selected_items:
         pdf.cell(200, 10, txt="Prediction Results", ln=True, align="C")
-        pdf.cell(200, 10, txt=f"Predicted Tumor Class: {prediction}", ln=True)
+        pdf.cell(200, 10, txt=f"Predicted Tumor Class: {safe_text(prediction)}", ln=True)
         pdf.cell(200, 10, txt=f"Confidence Score: {np.max(prediction_probabilities) * 100:.2f}%", ln=True)
         pdf.ln(10)
 
     # Add tumor dimensions
     if "Tumor Dimensions" in selected_items:
         pdf.cell(200, 10, txt="Tumor Dimensions", ln=True, align="C")
-        pdf.cell(200, 10, txt=f"Length: {tumor_dimensions.get('length', 'N/A')} mm", ln=True)
-        pdf.cell(200, 10, txt=f"Width: {tumor_dimensions.get('width', 'N/A')} mm", ln=True)
-        pdf.cell(200, 10, txt=f"Depth: {tumor_dimensions.get('depth', 'N/A')} mm", ln=True)
-        pdf.cell(200, 10, txt=f"Approximate Volume: {tumor_dimensions.get('volume', 0):.2f} mm³", ln=True)
+        pdf.cell(200, 10, txt=f"Length: {tumor_dimensions['length']} mm", ln=True)
+        pdf.cell(200, 10, txt=f"Width: {tumor_dimensions['width']} mm", ln=True)
+        pdf.cell(200, 10, txt=f"Depth: {tumor_dimensions['depth']} mm", ln=True)
+        pdf.cell(200, 10, txt=f"Approximate Volume: {tumor_dimensions['volume']:.2f} mm³", ln=True)
         pdf.ln(10)
 
     # Add anatomical localization
     if "Anatomical Localization" in selected_items:
         pdf.cell(200, 10, txt="Anatomical Localization", ln=True, align="C")
-        pdf.multi_cell(0, 10, txt=wrap_text(anatomical_localization))
+        pdf.multi_cell(0, 10, txt=safe_text(anatomical_localization))
         pdf.ln(10)
 
     # Add referral suggestions
     if "Referral Suggestions" in selected_items:
         pdf.cell(200, 10, txt="Referral Suggestions", ln=True, align="C")
-        pdf.multi_cell(0, 10, txt=wrap_text(referral_suggestions))
+        pdf.multi_cell(0, 10, txt=safe_text(referral_suggestions))
         pdf.ln(10)
 
     # Add evidence references
     if "Evidence References" in selected_items:
         pdf.cell(200, 10, txt="Evidence References", ln=True, align="C")
         for ref in evidence_references:
-            safe_ref = wrap_text(str(ref).encode("ascii", errors="ignore").decode() if ref else "N/A")
+            safe_ref = safe_text(ref)
             pdf.multi_cell(0, 10, txt=f"- {safe_ref}")
         pdf.ln(10)
 
@@ -440,7 +446,7 @@ def generate_pdf_report(selected_items, patient_info, prediction, prediction_pro
     if "Clinical Validation" in selected_items:
         pdf.cell(200, 10, txt="Clinical Validation", ln=True, align="C")
         for val in clinical_validation:
-            safe_val = wrap_text(str(val).encode("ascii", errors="ignore").decode() if val else "N/A")
+            safe_val = safe_text(val)
             pdf.multi_cell(0, 10, txt=f"- {safe_val}")
         pdf.ln(10)
 
