@@ -21,15 +21,11 @@ from hashlib import sha256
 # MODEL LOADING (OPTIMIZED FOR STREAMLIT SHARING)
 # =============================================
 
-import streamlit as st
-import tensorflow as tf
-from tensorflow.keras.models import load_model
-
 # Load the saved model with caching and error handling
 @st.cache_resource
 def load_model_cached():
     try:
-        # Define custom normalization layer
+        # Define custom normalization layer if needed
         class CustomNormalization(tf.keras.layers.Layer):
             def __init__(self, **kwargs):
                 super(CustomNormalization, self).__init__(**kwargs)
@@ -41,7 +37,7 @@ def load_model_cached():
                                             trainable=False)
                 self.variance = self.add_weight(name='variance',
                                                 shape=(input_shape[-1],),
-                                                initializer='ones', 
+                                                initializer='ones',
                                                 trainable=False)
                 self.count = self.add_weight(name='count',
                                              shape=(),
@@ -55,19 +51,19 @@ def load_model_cached():
                     inputs
                 )
 
-        # Load model from local directory (no more GitHub download)
-        model_path = "models/brain_tumor_classification_model_32pts.h5"  # Ensure this path is correct
+        # Load model from the local "models" directory
+        model_path = "models/brain_tumor_classification_model_32pts.h5"
         
         # Load model with custom objects
         model = load_model(model_path, 
-                           custom_objects={'CustomNormalization': CustomNormalization},
-                           compile=False)
-
+                          custom_objects={'CustomNormalization': CustomNormalization},
+                          compile=False)
+        
         # Recompile model
         model.compile(optimizer='adam',
                       loss='categorical_crossentropy',
                       metrics=['accuracy'])
-
+        
         return model
 
     except Exception as e:
@@ -80,7 +76,6 @@ try:
 except Exception as e:
     st.error(f"Critical error loading model: {str(e)}")
     st.stop()
-
 
 # =============================================
 # AUTHENTICATION SYSTEM (SIMPLIFIED FOR DEMO)
